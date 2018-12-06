@@ -1,0 +1,40 @@
+<html>
+<head>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+	</head>
+<body>
+<div class="BoxWrapper">
+<ul>
+<h1> {{post.title}} </h1>
+
+<p>{{post.content}}</p>
+<a href = "{{url_for('showCategoryPosts', category_id = category.id)}}"> <h3><-- Return to {{category.name}}</h3></a>
+
+</div>
+<div class="commentsSection">
+<h2> Comments: </h2>
+<form action="{{ url_for('showPost', post_id=post.id, category_id = post.category_id )}}" method = 'post'>
+
+<dl>
+	<dt>Content:</dt>
+		<dd><textarea name = 'content' rows='5' cols='40' placeholder='Type a comment here'> </textarea></dd>
+
+</dl>
+
+
+<input type='submit' value='Create'>
+
+</form>
+{% for comment in comments %}
+ {% for user in users %}
+  {% if user.id|string() == comment.author_id|string() %}
+<h3 style="line-height:0%; ">  <img style = "height: 5%; width: 5%;" src="{{user.photoURL}}" /> {{user.name}} - {{comment.time.strftime('%d-%m-%Y %H:%M')}}</h3>
+<h4>{{comment.content}}</h4>
+<hr>
+  {% endif %}
+ {% endfor %}
+{% endfor %}
+</div>
+</body>
+
+</html>

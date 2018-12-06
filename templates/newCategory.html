@@ -1,0 +1,39 @@
+<html>
+<head>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+	</head>
+<body>
+
+<h1>New Category</h1>
+
+<div class = 'BoxWrapper'>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+{% block body %}{% endblock %}
+<form action="{{ url_for('createCategory')}}" method = 'post'>
+
+<dl>
+	<dt>Category title:</dt>
+		<dd><input type ='text' size='30' name='title'></dd>
+
+</dl>
+
+
+<input type='submit' value='Create'>
+
+</form>
+</div>
+
+</body>
+
+
+
+
+</html>

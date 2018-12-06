@@ -1,0 +1,31 @@
+<html>
+<head>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+	</head>
+<body>
+
+<h1>New Post</h1>
+
+<div class = 'BoxWrapper'>
+<form action="{{ url_for('addPost', category_id=category_id )}}" method = 'post'>
+
+<dl>
+	<dt>Title:</dt>
+		<dd><input type ='text' size='30' name='title'></dd>
+	<dt>Content:</dt>
+		<dd><textarea name = 'content' rows='5' cols='40' > </textarea></dd>
+
+</dl>
+
+
+<input type='submit' value='Create'>
+
+</form>
+</div>
+
+</body>
+
+
+
+
+</html>

@@ -1,0 +1,37 @@
+<html>
+<head>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+	</head>
+<body>
+<div class="BoxWrapper">
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+{% block body %}{% endblock %}
+<ul>
+
+<div class = 'pane'>
+{% for category in categories %}
+
+<li><div>
+<a href = "{{url_for('showCategoryPosts', category_id = category.id)}}"> <h3>{{category.name}}</h3></a>
+
+<a href = "{{url_for('editCategory',category_id = category.id)}}">Edit Category</a>
+
+<a href = "{{url_for('deleteCategory',category_id = category.id)}}">Delete Category</a> 
+<hr>
+</div></li>
+
+{% endfor %}
+</div>
+</ul>
+</div>
+</body>
+
+</html>

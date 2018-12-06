@@ -7,8 +7,8 @@ from sqlalchemy import create_engine
 
 Base = declarative_base()
 
-class User(Base):
-    __tablename__ = 'user'
+class Users(Base):
+    __tablename__ = 'users'
 
     name = Column(String(250), nullable=False)
     id = Column(Integer, primary_key=True)
@@ -18,24 +18,33 @@ class User(Base):
     bio = Column(String)
 
 
-class Category(Base):
-    __tablename__ = 'category'
+class Categories(Base):
+    __tablename__ = 'categories'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
 
-class Post(Base):
-    __tablename__ = 'post'
+class Posts(Base):
+    __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)
     title = Column(String(250), nullable=False)
     content = Column(String(250), nullable=False)
-    category_id = Column(Integer, ForeignKey('category.id'))
-    category = relationship(Category)
-    author_id = Column(Integer, ForeignKey('user.id'))
-    user = relationship(User)
+    category_id = Column(Integer, ForeignKey('categories.id'))
+    category = relationship(Categories)
+    author_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship(Users)
     time = Column(DateTime, default=func.now())
 
+class Comments(Base):
+    __tablename__ = 'comments'
+    id = Column(Integer, primary_key=True)
+    content = Column(String(250), nullable=False)
+    author_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship(Users)
+    post_id = Column(Integer, ForeignKey('posts.id'))
+    post = relationship(Posts)
+    time = Column(DateTime, default=func.now())
 
 engine = create_engine('sqlite:///forum_database.db')
 

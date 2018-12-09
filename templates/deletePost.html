@@ -1,0 +1,36 @@
+<html>
+<head>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+	</head>
+<body>
+
+<h1>Delete Post</h1>
+
+<div class = 'BoxWrapper'>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+{% block body %}{% endblock %}
+<form action="{{ url_for('deletePost', category_id = post.category_id ,post_id = post.id)}}" method = 'post'>
+<dl>
+	<dt>Are you sure that you want to delete '{{post.title}}'?</dt>
+
+</dl>
+
+<input type='submit' value='Yes'> <input type='button' onclick="window.location.href='{{url_for('showCategoryPosts', category_id=post.category_id)}}';" value='No'>
+
+</form>
+</div>
+
+</body>
+
+
+
+
+</html>

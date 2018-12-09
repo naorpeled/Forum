@@ -3,7 +3,18 @@
 	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 	</head>
 <body>
+
 <div class="BoxWrapper">
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+{% block body %}{% endblock %}
 <ul>
 <h1> {{post.title}} </h1>
 
@@ -28,7 +39,7 @@
 {% for comment in comments %}
  {% for user in users %}
   {% if user.id|string() == comment.author_id|string() %}
-<h3 style="line-height:0%; ">  <img style = "height: 5%; width: 5%;" src="{{user.photoURL}}" /> {{user.name}} - {{comment.time.strftime('%d-%m-%Y %H:%M')}}</h3>
+<h3 style="line-height:0%; ">  <img style = "height: 5%; width: 5%;" src="{{user.photoURL}}" /> {{user.name}} - {{comment.time.strftime('%d-%m-%Y %H:%M')}} - <a href="{{url_for('editComment',post_id=post.id,category_id=post.category_id, comment_id=comment.id)}}">edit</a> / <a href="{{url_for('deleteComment',post_id=post.id,category_id=post.category_id, comment_id=comment.id)}}">delete</a></h3>
 <h4>{{comment.content}}</h4>
 <hr>
   {% endif %}

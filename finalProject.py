@@ -51,20 +51,44 @@ def showCategoryPosts(category_id):
     return render_template('posts.html', category=category, posts=posts)
 
 
-@app.route('/categories/<int:category_id>/edit')
+@app.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
 def editCategory(category_id):
-    output = ""
-    output += "Editing category #"
-    output += str(category_id)
-    return output
+    session = DBSession()
+    oldCategory = session.query(Categories).filter_by(
+                                           id=category_id).first()
+    if request.method == 'POST':
+        cond = session.query(Categories).filter_by(
+                                         name=request.form['title']).first()
+        if cond is None:
+            oldCategory.name = request.form['title']
+            session.add(oldCategory)
+            session.commit()
+            flash('Category name changed!')
+            session.close()
+            return redirect(url_for('showCategories'))
+        else:
+            flash('Category with that name already exists')
+            return redirect(url_for('editCategory', category_id = category_id))
+    else:
+        session.close()
+        return render_template('editCategory.html', category=oldCategory)
 
 
-@app.route('/categories/<int:category_id>/delete')
+@app.route('/categories/<int:category_id>/delete', methods=['GET', 'POST'])
 def deleteCategory(category_id):
-    output = ""
-    output += "Deleting category #"
-    output += str(category_id)
-    return output
+    session = DBSession()
+    category = session.query(Categories).filter_by(
+                                           id=category_id).first()
+    if request.method == 'POST':
+            session.delete(category)
+            session.commit()
+            message = 'Category \''+ str(category.name) + '\' was successfully deleted!'
+            flash(message)
+            session.close()
+            return redirect(url_for('showCategories'))
+    else:
+        session.close()
+        return render_template('deleteCategory.html', category=category)
 
 
 @app.route('/categories/<int:category_id>/<int:post_id>',
@@ -110,24 +134,79 @@ def addPost(category_id):
             return render_template('newPost.html', category_id=category_id)
 
 
-@app.route('/categories/<int:category_id>/edit/<int:post_id>')
+@app.route('/categories/<int:category_id>/edit/<int:post_id>', methods=['GET', 'POST'])
 def editPost(category_id, post_id):
-    output = ""
-    output += "Editing Post #"
-    output += str(post_id)
-    output += "in category #"
-    output += str(category_id)
-    return output
+    session = DBSession()
+    oldPost = session.query(Posts).filter_by(
+                                           id=post_id, category_id=category_id).first()
+    if request.method == 'POST':
+            oldPost.title = request.form['title']
+            oldPost.content = request.form['content']
+            session.add(oldPost)
+            session.commit()
+            flash('The post was successfully edited!')
+            session.close()
+            return redirect(url_for('showCategoryPosts', category_id = category_id))
+    else:
+        session.close()
+        return render_template('editPost.html', post=oldPost)
 
 
-@app.route('/categories/<int:category_id>/delete/<int:post_id>')
+@app.route('/categories/<int:category_id>/<int:post_id>/editComment/<int:comment_id>', methods=['GET', 'POST'])
+def editComment(category_id, post_id , comment_id):
+    session = DBSession()
+    currentCategory = session.query(Categories).filter_by(id=category_id).first()
+    allComments = session.query(Comments).filter_by(post_id = post_id).all()
+    currentPost = session.query(Posts).filter_by(id=post_id).first()
+    users = session.query(Users).all()
+    oldComment = session.query(Comments).filter_by(
+                                           id=comment_id).first()
+    if request.method == 'POST':
+            oldComment.content = request.form['content']
+            session.add(oldComment)
+            session.commit()
+            flash('The comment was successfully edited!')
+            session.close()
+            return redirect(url_for('showPost', post_id=post_id, category_id=category_id))
+    else:
+        session.close()
+        return render_template('editComment.html', category=currentCategory ,users=users, post = currentPost, comments = allComments, comment_id = comment_id)
+
+
+@app.route('/categories/<int:category_id>/delete/<int:post_id>', methods=['GET', 'POST'])
 def deletePost(category_id, post_id):
-    output = ""
-    output += "Deleting Post #"
-    output += str(post_id)
-    output += "in category #"
-    output += str(category_id)
-    return output
+    session = DBSession()
+    category = session.query(Categories).filter_by(
+                                           id=category_id).first()
+    post = session.query(Posts).filter_by(
+                                  id=post_id).first()
+    if request.method == 'POST':
+            session.delete(post)
+            session.commit()
+            message = 'The post titled \''+ str(post.title) + '\' was successfully deleted!'
+            flash(message)
+            session.close()
+            return redirect(url_for('showCategoryPosts', category_id=category_id))
+    else:
+        session.close()
+        return render_template('deletePost.html', category=category, post=post)
+
+
+@app.route('/categories/<int:category_id>/<int:post_id>/deleteComment/<int:comment_id>', methods=['GET', 'POST'])
+def deleteComment(category_id, post_id, comment_id):
+    session = DBSession()
+    comment = session.query(Comments).filter_by(
+                                           id=comment_id).first()
+    if request.method == 'POST':
+            session.delete(comment)
+            session.commit()
+            message = 'The comment was successfully deleted!'
+            flash(message)
+            session.close()
+            return redirect(url_for('showPost', post_id=post_id,category_id=category_id))
+    else:
+        session.close()
+        return render_template('deleteComment.html', category_id=category_id, post_id=post_id, comment_id=comment_id)
 
 
 @app.route('/login')

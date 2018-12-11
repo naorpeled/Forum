@@ -3,8 +3,8 @@
 	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 	</head>
 <body>
-
 <div class="BoxWrapper">
+{% include 'header.html' %}
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class=flashes>
@@ -24,6 +24,7 @@
 </div>
 <div class="commentsSection">
 <h2> Comments: </h2>
+{% if session['user_id'] is defined %}
 <form action="{{ url_for('showPost', post_id=post.id, category_id = post.category_id )}}" method = 'post'>
 
 <dl>
@@ -36,15 +37,17 @@
 <input type='submit' value='Create'>
 
 </form>
+{% endif %}
 {% for comment in comments %}
  {% for user in users %}
   {% if user.id|string() == comment.author_id|string() %}
-<h3 style="line-height:0%; ">  <img style = "height: 5%; width: 5%;" src="{{user.photoURL}}" /> {{user.name}} - {{comment.time.strftime('%d-%m-%Y %H:%M')}} - <a href="{{url_for('editComment',post_id=post.id,category_id=post.category_id, comment_id=comment.id)}}">edit</a> / <a href="{{url_for('deleteComment',post_id=post.id,category_id=post.category_id, comment_id=comment.id)}}">delete</a></h3>
+<a href="{{url_for('showUserProfile', user_id=comment.author_id)}}"><h3 style="line-height:0%; ">  <img style = "height: 5%; width: 5%;" src="{{user.photoURL}}" /> {{user.name}} - {{comment.time.strftime('%d-%m-%Y %H:%M')}}</a>  {% if session['user_id'] is defined %}-<a href="{{url_for('editComment',post_id=post.id,category_id=post.category_id, comment_id=comment.id)}}">edit</a> / <a href="{{url_for('deleteComment',post_id=post.id,category_id=post.category_id, comment_id=comment.id)}}">delete</a></h3>{% endif %}
 <h4>{{comment.content}}</h4>
 <hr>
   {% endif %}
  {% endfor %}
 {% endfor %}
+{% include 'footer.html' %}
 </div>
 </body>
 

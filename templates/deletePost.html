@@ -4,9 +4,11 @@
 	</head>
 <body>
 
-<h1>Delete Post</h1>
+
 
 <div class = 'BoxWrapper'>
+{% include 'header.html' %}
+<h1>Delete Post</h1>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class=flashes>
@@ -26,6 +28,7 @@
 <input type='submit' value='Yes'> <input type='button' onclick="window.location.href='{{url_for('showCategoryPosts', category_id=post.category_id)}}';" value='No'>
 
 </form>
+{% include 'footer.html' %}
 </div>
 
 </body>

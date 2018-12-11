@@ -1,0 +1,48 @@
+<html>
+<head>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<div class="BoxWrapper">
+{% include 'header.html' %}
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+{% block body %}{% endblock %}
+<ul>
+<div>
+<p><img src="{{user.photoURL}}" style="width:25%; height: 50%;"/> <i><span style="font-size:250%;">„{{user.bio}}‘‘</span></i> </p>
+</div>
+<h2><h1 style="font-size:250vp;">{{user.name}}</h1>
+
+<div class="profileSection" style="font-size:125%;">
+<h3 style="text-align:center;"> User Posts: </h3>
+<br>
+{% for post in user_posts %}
+{% if post is defined %}
+<li><div>
+<a href = "{{url_for('showPost', category_id = post.category_id, post_id = post.id)}}"> <h3>{{post.title}}</h3></a>
+<span style="text-align:right;">{{post.time.strftime('%d-%m-%Y %H:%M')}}</span>
+
+<a href = "{{url_for('editPost',category_id = post.category_id, post_id = post.id)}}">Edit Post</a>
+
+<a href = "{{url_for('deletePost',category_id = post.category_id, post_id = post.id)}}">Delete Post</a> 
+<hr>
+</div></li>
+{% endif %}
+{% endfor %}
+</div>
+<a href = "{{url_for('showCategories')}}" style="font-size:100vp;"><--- Return to categories</a> 
+</div>
+
+</body>
+
+</html>

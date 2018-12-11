@@ -3,7 +3,9 @@
 	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 	</head>
 <body>
+
 <div class="BoxWrapper">
+{% include 'header.html' %}
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class=flashes>
@@ -17,22 +19,35 @@
 <ul>
 
 <div class = 'pane'>
-{% for post in posts %}
 
+<form action="{{ url_for('showCategoryPosts', category_id=category_id )}}" method = 'post'>
+{% if session['user_id'] is defined %}
+<a href="{{url_for('addPost', category_id=category.id)}}"> <b style="color:green;">+</b> New post</a> | {% endif  %}Search Post: <input type="text" name="keyword"></input><input type="submit" value="Search" ></button>
+</form>
+<hr>
+{% for post in posts %}
+{% for user in users %}
+{% if user.id|string() == post.author_id|string() %}
+{% if post.category_id|string() == category_id|string() %}
 <li><div>
-<a href = "{{url_for('showPost', category_id = category.id, post_id = post.id)}}"> <h3>{{post.title}}</h3></a>
+<a href = "{{url_for('showPost', category_id = category.id, post_id = post.id)}}"> <h3>{{post.title}} - by {{user.name}}</h3></a>
 <span style="text-align:right;">{{post.time.strftime('%d-%m-%Y %H:%M')}}</span>
+{% if session['user_id'] is defined %}
 <a href = "{{url_for('editPost',category_id = category.id, post_id = post.id)}}">Edit Post</a>
 
 <a href = "{{url_for('deletePost',category_id = category.id, post_id = post.id)}}">Delete Post</a> 
+{% endif %}
 <hr>
 </div></li>
-
+{% endif %}
+{% endif %}
 {% endfor %}
-<a href = "{{url_for('showCategories')}}"> <h3><-- Return to categories</h3></a>
+{% endfor %}
+<a href = "{{url_for('showCategories')}}"> <h3><--- Return to categories</h3></a>
 
 </div>
 </ul>
+{% include 'footer.html' %}
 </div>
 </body>
 

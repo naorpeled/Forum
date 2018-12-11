@@ -4,6 +4,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database_setup import Base, Posts, Categories, Users, Comments
 import datetime
+import random
+import string
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.client import FlowExchangeError
+import httplib2
+import json
+from flask import make_response
+import requests
+from flask import session as login_session
+
+CLIENT_ID = json.loads(
+    open('client_secrets.json', 'r').read())['web']['client_id']
+APPLICATION_NAME = "Forum Project"
 
 app = Flask(__name__)
 
@@ -14,41 +27,80 @@ DBSession = sessionmaker(bind=engine)
 
 
 @app.route('/')
-@app.route('/categories')
+@app.route('/categories', methods=['GET','POST'])
 def showCategories():
     session = DBSession()
     categories = session.query(Categories).all()
-    session.close()
+    if request.method == 'POST':
+        searchKeyword= '%'
+        searchKeyword+=request.form['keyword']
+        searchKeyword+= '%'
+        filtered_posts = session.query(Categories).filter(Categories.name.like(searchKeyword)).all()
+        return render_template('categories.html', categories=filtered_categories)
+	session.close()
     return render_template('categories.html', categories=categories)
+
+
+@app.route('/JSON')
+@app.route('/categories/JSON')
+def showCategoriesJSON():
+    session = DBSession()
+    categories = session.query(Categories).all()
+    session.close()
+    return jsonify(categories=[r.serialize for r in categories])
 
 
 @app.route('/categories/new', methods=['GET', 'POST'])
 def createCategory():
-    if request.method == 'POST':
-        session = DBSession()
-        newCategory = Categories(name=request.form['title'])
-        cond = session.query(Categories).filter_by(
-                                         name=request.form['title']).first()
-        if cond is None:
-            session.add(newCategory)
-            session.commit()
-            flash('Category added!')
-            session.close()
-            return redirect(url_for('showCategories'))
+    if not login_session['user_id']:
+        flash("Please login first")
+        return redirect(url_for('login'))
+    elif str(login_session['user_rank']) == str(0):
+        flash("In order to create a category you must be an admin.")
+        return redirect(url_for('showCategories'))
+    elif str(login_session['user_rank']) == str(1):
+        if request.method == 'POST':
+            session = DBSession()
+            newCategory = Categories(name=request.form['title'])
+            cond = session.query(Categories).filter_by(
+                                             name=request.form['title']).first()
+            if cond is None:
+                session.add(newCategory)
+                session.commit()
+                flash('Category added!')
+                session.close()
+                return redirect(url_for('showCategories'))
+            else:
+                flash('Category with that name already exists')
+                return redirect(url_for('createCategory'))
         else:
-            flash('Category with that name already exists')
-            return redirect(url_for('createCategory'))
-    else:
-        return render_template('newCategory.html')
+            return render_template('newCategory.html')
 
 
-@app.route('/categories/<int:category_id>')
+@app.route('/categories/<int:category_id>', methods=['GET', 'POST'])
 def showCategoryPosts(category_id):
     session = DBSession()
     category = session.query(Categories).filter_by(id=category_id).one()
+    users = session.query(Users).all()
     posts = session.query(Posts).filter_by(category_id=category_id)
+    if request.method == 'POST':
+        searchKeyword= '%'
+        searchKeyword+=request.form['keyword']
+        searchKeyword+= '%'
+        filtered_posts = session.query(Posts).filter(Posts.title.like(searchKeyword)).all()
+        session.close()
+        return render_template('posts.html', category_id=category.id, category=category, posts=filtered_posts, users=users)
     session.close()
-    return render_template('posts.html', category=category, posts=posts)
+    return render_template('posts.html', category_id=category.id ,category=category, posts=posts, users=users)
+
+
+@app.route('/categories/<int:category_id>/JSON')
+def showCategoryPostsJSON(category_id):
+    session = DBSession()
+    category = session.query(Categories).filter_by(id=category_id).one()
+    posts = session.query(Posts).filter_by(
+        category_id=category_id).all()
+    return jsonify(posts=[i.serialize for i in posts])
 
 
 @app.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
@@ -56,22 +108,29 @@ def editCategory(category_id):
     session = DBSession()
     oldCategory = session.query(Categories).filter_by(
                                            id=category_id).first()
-    if request.method == 'POST':
-        cond = session.query(Categories).filter_by(
-                                         name=request.form['title']).first()
-        if cond is None:
-            oldCategory.name = request.form['title']
-            session.add(oldCategory)
-            session.commit()
-            flash('Category name changed!')
-            session.close()
-            return redirect(url_for('showCategories'))
+    if not login_session:
+        flash("Please login first")
+        return redirect(url_for('login'))
+    if str(login_session['user_rank']) == str(0):
+        flash("In order to edit a category you must be an admin")
+        return redirect(url_for('showCategories'))
+    elif str(login_session['user_rank']) == str(1):
+        if request.method == 'POST':
+            cond = session.query(Categories).filter_by(
+                                             name=request.form['title']).first()
+            if cond is None:
+                oldCategory.name = request.form['title']
+                session.add(oldCategory)
+                session.commit()
+                flash('Category name changed!')
+                session.close()
+                return redirect(url_for('showCategories'))
+            else:
+                flash('Category with that name already exists')
+                return redirect(url_for('editCategory', category_id = category_id))
         else:
-            flash('Category with that name already exists')
-            return redirect(url_for('editCategory', category_id = category_id))
-    else:
-        session.close()
-        return render_template('editCategory.html', category=oldCategory)
+            session.close()
+            return render_template('editCategory.html', category=oldCategory)
 
 
 @app.route('/categories/<int:category_id>/delete', methods=['GET', 'POST'])
@@ -79,31 +138,43 @@ def deleteCategory(category_id):
     session = DBSession()
     category = session.query(Categories).filter_by(
                                            id=category_id).first()
-    if request.method == 'POST':
-            session.delete(category)
-            session.commit()
-            message = 'Category \''+ str(category.name) + '\' was successfully deleted!'
-            flash(message)
+    if not login_session:
+        flash("Please login first")
+        return redirect(url_for('login'))
+    if str(login_session['user_rank']) == str(0):
+        flash("In order to edit a category you must be an admin")
+        return redirect(url_for('showCategories'))
+    elif str(login_session['user_rank']) == str(1):	
+        if request.method == 'POST':
+                session.delete(category)
+                session.commit()
+                message = 'Category \''+ str(category.name) + '\' was successfully deleted!'
+                flash(message)
+                session.close()
+                return redirect(url_for('showCategories'))
+        else:
             session.close()
-            return redirect(url_for('showCategories'))
-    else:
-        session.close()
-        return render_template('deleteCategory.html', category=category)
+            return render_template('deleteCategory.html', category=category)
 
 
 @app.route('/categories/<int:category_id>/<int:post_id>',
            methods=['GET', 'POST'])
 def showPost(category_id, post_id):
     if request.method == 'POST':
-        session = DBSession()
-        newComment = Comments(content=request.form['content'],
-                              post_id=post_id,
-                              time=datetime.datetime.now())
-        session.add(newComment)
-        session.commit()
-        session.close()
-        return redirect(url_for('showPost', category_id=category_id,
-                                post_id=post_id))
+        if login_session['user_id']:
+            session = DBSession()
+            newComment = Comments(content=request.form['content'],
+                                  post_id=post_id,
+                                  author_id=login_session['user_id'],
+                                  time=datetime.datetime.now())
+            session.add(newComment)
+            session.commit()
+            session.close()
+            return redirect(url_for('showPost', category_id=category_id,
+                                    post_id=post_id))
+        else:
+            flash("You aren't logged in. Please log in in roder to write a comment")
+            return redirect(url_for('login'))
     session = DBSession()
     category = session.query(Categories).filter_by(id=category_id).one()
     post = session.query(Posts).filter_by(id=post_id).one()
@@ -117,21 +188,36 @@ def showPost(category_id, post_id):
                            comments=comments)
 
 
+
+@app.route('/categories/<int:category_id>/<int:post_id>/JSON')
+def showPostJSON(category_id, post_id):
+    session = DBSession()
+    post = session.query(Posts).filter_by(id=post_id).one()
+    session.close()
+    return jsonify(post=post.serialize)						   
+
+			
 @app.route('/categories/<int:category_id>/add', methods=['GET', 'POST'])
 def addPost(category_id):
+    session = DBSession()
     if request.method == 'POST':
-            session = DBSession()
+        if login_session:
             newPost = Posts(title=request.form['title'],
                             content=request.form[
                             'content'], category_id=category_id,
-                            time=datetime.datetime.now())
+                            time=datetime.datetime.now(), author_id=login_session['user_id'])
             session.add(newPost)
             session.commit()
             session.close()
             return redirect(url_for('showCategoryPosts',
                                     category_id=category_id))
+        else:
+            flash("Please login in order to create a new post")
+            return redirect(url_for('login'))
     else:
-            return render_template('newPost.html', category_id=category_id)
+            categoryName = session.query(Categories).filter_by(id=category_id).one().name
+            session.close()
+            return render_template('newPost.html', category_id=category_id, categoryName=categoryName)
 
 
 @app.route('/categories/<int:category_id>/edit/<int:post_id>', methods=['GET', 'POST'])
@@ -139,6 +225,9 @@ def editPost(category_id, post_id):
     session = DBSession()
     oldPost = session.query(Posts).filter_by(
                                            id=post_id, category_id=category_id).first()
+    if oldPost.author_id != login_session['user_id']:
+        flash("You cannot edit posts that aren't yours")
+        return redirect(url_for('showCategoryPosts', category_id=category_id))
     if request.method == 'POST':
             oldPost.title = request.form['title']
             oldPost.content = request.form['content']
@@ -161,6 +250,9 @@ def editComment(category_id, post_id , comment_id):
     users = session.query(Users).all()
     oldComment = session.query(Comments).filter_by(
                                            id=comment_id).first()
+    if oldComment.author_id != login_session['user_id']:
+        flash("You cannot edit comments that aren't yours")
+        return redirect(url_for('showPost', category_id=category_id, post_id=post_id))
     if request.method == 'POST':
             oldComment.content = request.form['content']
             session.add(oldComment)
@@ -180,6 +272,9 @@ def deletePost(category_id, post_id):
                                            id=category_id).first()
     post = session.query(Posts).filter_by(
                                   id=post_id).first()
+    if post.author_id != login_session['user_id']:
+        flash("You cannot delete posts that aren't yours")
+        return redirect(url_for('showCategoryPosts', category_id=category_id))
     if request.method == 'POST':
             session.delete(post)
             session.commit()
@@ -197,6 +292,9 @@ def deleteComment(category_id, post_id, comment_id):
     session = DBSession()
     comment = session.query(Comments).filter_by(
                                            id=comment_id).first()
+    if comment.author_id != login_session['user_id']:
+        flash("You cannot delete comments that aren't yours")
+        return redirect(url_for('showPost', category_id=category_id, post_id=post_id))
     if request.method == 'POST':
             session.delete(comment)
             session.commit()
@@ -209,36 +307,249 @@ def deleteComment(category_id, post_id, comment_id):
         return render_template('deleteComment.html', category_id=category_id, post_id=post_id, comment_id=comment_id)
 
 
-@app.route('/login')
+@app.route('/login', methods=['GET'])
 def login():
-    return 'Log in here'
+        state = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                     for x in xrange(32))
+        login_session['state'] = state
+        return render_template('login.html', STATE=state)
+
+@app.route('/fbconnect', methods=['POST'])
+def fbconnect():
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    access_token = request.data
+    print "access token received %s " % access_token
 
 
-@app.route('/logout')
-def logout():
-    return 'Log out here'
+    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
+        'web']['app_id']
+    app_secret = json.loads(
+        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+    url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
+        app_id, app_secret, access_token)
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
 
 
-@app.route('/register')
-def registerUser():
-    return 'Register here'
+    # Use token to get user info from API
+    userinfo_url = "https://graph.facebook.com/v2.8/me"
+    '''
+        Due to the formatting for the result from the server token exchange we have to
+        split the token first on commas and select the first index which gives us the key : value
+        for the server access token then we split it on colons to pull out the actual token value
+        and replace the remaining quotes with nothing so that it can be used directly in the graph
+        api calls
+    '''
+    token = result.split(',')[0].split(':')[1].replace('"', '')
+
+    url = 'https://graph.facebook.com/v2.8/me?access_token=%s&fields=name,id,email' % token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+    # print "url sent for API access:%s"% url
+    # print "API JSON result: %s" % result
+    data = json.loads(result)
+    login_session['provider'] = 'facebook'
+    login_session['username'] = data["name"]
+    login_session['email'] = data["email"]
+    login_session['facebook_id'] = data["id"]
+
+    # The token must be stored in the login_session in order to properly logout
+    login_session['access_token'] = token
+
+    # Get user picture
+    url = 'https://graph.facebook.com/v2.8/me/picture?access_token=%s&redirect=0&height=200&width=200' % token
+    h = httplib2.Http()
+    result = h.request(url, 'GET')[1]
+    data = json.loads(result)
+
+    login_session['picture'] = data["data"]["url"]
+
+    # see if user exists
+    user_id = getUserID(login_session['email'])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+    login_session['user_rank'] = getUserRank(user_id)
+    output = '-'
+    flash("Now logged in as %s" % login_session['username'])
+    return output
 
 
-@app.route('/admin')
-def showAdminPanel():
-    return 'Admin panel here'
+@app.route('/gconnect', methods=['POST'])
+def gconnect():
+    # Validate state token
+    if request.args.get('state') != login_session['state']:
+        response = make_response(json.dumps('Invalid state parameter.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+    # Obtain authorization code
+    code = request.data
+
+    try:
+        # Upgrade the authorization code into a credentials object
+        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow.redirect_uri = 'postmessage'
+        credentials = oauth_flow.step2_exchange(code)
+    except FlowExchangeError:
+        response = make_response(
+            json.dumps('Failed to upgrade the authorization code.'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Check that the access token is valid.
+    access_token = credentials.access_token
+    url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'
+           % access_token)
+    h = httplib2.Http()
+    result = json.loads(h.request(url, 'GET')[1])
+    # If there was an error in the access token info, abort.
+    if result.get('error') is not None:
+        response = make_response(json.dumps(result.get('error')), 500)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Verify that the access token is used for the intended user.
+    gplus_id = credentials.id_token['sub']
+    if result['user_id'] != gplus_id:
+        response = make_response(
+            json.dumps("Token's user ID doesn't match given user ID."), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Verify that the access token is valid for this app.
+    if result['issued_to'] != CLIENT_ID:
+        response = make_response(
+            json.dumps("Token's client ID does not match app's."), 401)
+        print "Token's client ID does not match app's."
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    stored_access_token = login_session.get('access_token')
+    stored_gplus_id = login_session.get('gplus_id')
+    if stored_access_token is not None and gplus_id == stored_gplus_id:
+        response = make_response(json.dumps('Current user is already connected.'),
+                                 200)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+
+    # Store the access token in the session for later use.
+    login_session['access_token'] = credentials.access_token
+    login_session['gplus_id'] = gplus_id
+
+    # Get user info
+    userinfo_url = "https://www.googleapis.com/oauth2/v1/userinfo"
+    params = {'access_token': credentials.access_token, 'alt': 'json'}
+    answer = requests.get(userinfo_url, params=params)
+
+    data = answer.json()
+
+    login_session['username'] = data['name']
+    login_session['picture'] = data['picture']
+    login_session['email'] = data['email']
+    # ADD PROVIDER TO LOGIN SESSION
+    login_session['provider'] = 'google'
+
+    # see if user exists, if it doesn't make a new one
+    user_id = getUserID(data["email"])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+    login_session['user_rank'] = getUserRank(user_id)
+
+    output = '-'
+    flash("You are now logged in as %s" % login_session['username'])
+    return output
+
+
+# User Helper Functions
+
+
+def createUser(login_session):
+    session = DBSession()
+    newUser = Users(name=login_session['username'], email=login_session[
+                   'email'], photoURL=login_session['picture'], rank=0)
+    session.add(newUser)
+    session.commit()
+    user = session.query(Users).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def getUserInfo(user_id):
+    session = DBSession()
+    user = session.query(Users).filter_by(id=user_id).one()
+    return user
+
+
+def getUserRank(user_id):
+    session = DBSession()
+    user = session.query(Users).filter_by(id=user_id).one()
+    return user.rank
+
+
+def getUserID(email):
+    session = DBSession()
+    try:
+        user = session.query(Users).filter_by(email=email).one()
+        return user.id
+    except:
+        return None
+
+# DISCONNECT - Revoke a current user's token and reset their login_session
+
+
+@app.route('/disconnect')
+def disconnect():
+    if not login_session['provider']:
+        return redirect(url_for('showCategories'))
+    if login_session['provider']=='facebook':
+        facebook_id = login_session['facebook_id']
+        # The access token must me included to successfully logout
+        access_token = login_session['access_token']
+        url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+        h = httplib2.Http()
+        result = h.request(url, 'DELETE')[1]
+        login_session.clear()
+        flash("You have been logged out")
+        return redirect(url_for('showCategories'))
+    elif login_session['provider']=='google':
+        access_token = login_session.get('access_token')
+        if access_token is None:
+            response = make_response(
+            json.dumps('Current user not connected.'), 401)
+            response.headers['Content-Type'] = 'application/json'
+            flash("Current user not connected")
+            return redirect(url_for('showCategories'))
+        url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
+        print(access_token)
+        h = httplib2.Http()
+        result = h.request(url, 'GET')[0]
+        if result['status'] == '200':
+            login_session.clear()
+            response = make_response(json.dumps('Successfully disconnected.'), 200)
+            response.headers['Content-Type'] = 'application/json'
+            flash("You have been logged out")
+            return redirect(url_for('showCategories'))
+        else:
+            response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+            response.headers['Content-Type'] = 'application/json'
+            flash("Failed to revoke token")
+            login_session.clear()
+            return redirect(url_for('showCategories'))
 
 
 @app.route('/profiles/<int:user_id>/')
 def showUserProfile(user_id):
-    return 'Showing user details here'
-
-
-def searchUserPhotoURL(user_id):
     session = DBSession()
-    url = session.query(Users).filter_by(id=user_id).one().photoURL
-    session.close()
-    return url
+    try:
+        user = session.query(Users).filter_by(id=user_id).one()
+    except:
+        flash("User not found")
+        return redirect(url_for('showCategories'))
+    user_posts = session.query(Posts).filter_by(id=user_id).all()
+    return render_template('profile.html', user=user, user_posts=user_posts)
 
 
 if __name__ == '__main__':

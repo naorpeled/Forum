@@ -1,9 +1,12 @@
 <html>
 <head>
 	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
-	</head>
+</head>
 <body>
+
+
 <div class="BoxWrapper">
+{% include 'header.html' %}
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class=flashes>
@@ -17,21 +20,30 @@
 <ul>
 
 <div class = 'pane'>
+{% if session['user_id'] is defined %}
+<form action="{{ url_for('showCategories')}}" method = 'post'>
+<a href="{{url_for('createCategory')}}"> <b style="color:green;">+</b> New Category</a> |{% endif %} Search Category: <input type="text" name="keyword"></input><input type="submit" value="Search" ></button>
+</form>
 {% for category in categories %}
+
 
 <li><div>
 <a href = "{{url_for('showCategoryPosts', category_id = category.id)}}"> <h3>{{category.name}}</h3></a>
 
+{% if session['user_id'] is defined %}
 <a href = "{{url_for('editCategory',category_id = category.id)}}">Edit Category</a>
 
 <a href = "{{url_for('deleteCategory',category_id = category.id)}}">Delete Category</a> 
+{% endif %}
 <hr>
 </div></li>
 
 {% endfor %}
 </div>
 </ul>
+{% include 'footer.html' %}
 </div>
+
 </body>
 
 </html>

@@ -1,0 +1,12 @@
+<div class="header">
+  <a href="" class="logo">Forum</a>
+  <div class="header-right">
+    <a href="{{url_for('showCategories')}}">Home</a>
+    {% if 'user_id' not in session %}
+    <a href="{{url_for('login')}}">login</a>
+	{% else %}
+	<a href="{{url_for('showUserProfile', user_id=session['user_id'] )}}">Profile</a>
+	<a href="{{url_for('disconnect')}}">logout</a>
+	{% endif %}
+  </div>
+</div>

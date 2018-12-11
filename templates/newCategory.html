@@ -4,9 +4,11 @@
 	</head>
 <body>
 
-<h1>New Category</h1>
+
 
 <div class = 'BoxWrapper'>
+{% include 'header.html' %}
+<h1>New Category</h1>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class=flashes>
@@ -16,7 +18,6 @@
     </ul>
   {% endif %}
 {% endwith %}
-{% block body %}{% endblock %}
 <form action="{{ url_for('createCategory')}}" method = 'post'>
 
 <dl>
@@ -29,6 +30,8 @@
 <input type='submit' value='Create'>
 
 </form>
+<a href="{{url_for('showCategories')}}"><-- Return to categories</a>
+{% include 'footer.html' %}
 </div>
 
 </body>

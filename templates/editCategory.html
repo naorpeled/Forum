@@ -4,9 +4,11 @@
 	</head>
 <body>
 
-<h1>Edit Category</h1>
+
 
 <div class = 'BoxWrapper'>
+{% include 'header.html' %}
+<h1>Edit Category</h1>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <ul class=flashes>
@@ -29,6 +31,7 @@
 <input type='submit' value='Submit'>
 <a href = "{{url_for('showCategories')}}"> <h3><-- Return to categories</h3></a>
 </form>
+{% include 'footer.html' %}
 </div>
 
 </body>

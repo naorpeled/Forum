@@ -4,9 +4,11 @@
 	</head>
 <body>
 
-<h1>New Post</h1>
+
 
 <div class = 'BoxWrapper'>
+{% include 'header.html' %}
+<h1>New Post</h1>
 <form action="{{ url_for('addPost', category_id=category_id )}}" method = 'post'>
 
 <dl>
@@ -19,10 +21,10 @@
 
 
 <input type='submit' value='Create'>
-
 </form>
+<a href="{{url_for('showCategoryPosts', category_id=category_id)}}"><-- Return to {{categoryName}}</a>
+{% include 'footer.html' %}
 </div>
-
 </body>
 
 

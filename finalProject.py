@@ -604,15 +604,22 @@ def disconnect():
             return redirect(url_for('showCategories'))
 
 
-@app.route('/profiles/<int:user_id>/')
+@app.route('/profiles/<int:user_id>/',
+           methods=["GET", "POST"])
 def showUserProfile(user_id):
     session = DBSession()
-    try:
-        user = session.query(Users).filter_by(id=user_id).one()
-    except LookupError:
+    user = session.query(Users).filter_by(id=user_id).one_or_none()
+    if user is None:
+        session.close()
         flash("User not found")
         return redirect(url_for('showCategories'))
     user_posts = session.query(Posts).filter_by(author_id=user_id).all()
+    if request.method == "POST":
+        newUser = session.query(Users).filter_by(id=user_id).first()
+        newBio = request.form['bio']
+        newUser.bio = str(newBio)
+        session.add(user)
+        session.commit()
     return render_template('profile.html', user=user, user_posts=user_posts)
 
 

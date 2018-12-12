@@ -19,7 +19,13 @@
 {% block body %}{% endblock %}
 <ul>
 <div>
-<p><img src="{{user.photoURL}}" style="width:25%; height: 50%;"/> <i><span style="font-size:250%;">„{{user.bio}}‘‘</span></i> </p>
+{% if session['user_id']|string() == user.id|string() %}
+<form action="{{url_for('showUserProfile', user_id=user.id)}}" method="POST">
+<p><img src="{{user.photoURL}}" style="width:25%; height: 50%;"/>Change status: <i><span style="font-size:250%;"><input type="text" name="bio" value="{{user.bio}}"/> <input type="submit" value="Update" /></p>
+</form>
+{% else %}
+<p><img src="{{user.photoURL}}" style="width:25%; height: 50%;"/> <i><span style="font-size:250%;">„{{user.bio}}‘‘</span></i></p>
+{% endif %}
 </div>
 <h2><h1 style="font-size:250vp;">{{user.name}}</h1>
 

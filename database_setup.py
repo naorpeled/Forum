@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 
 Base = declarative_base()
 
+
 class Users(Base):
     __tablename__ = 'users'
 
@@ -17,6 +18,7 @@ class Users(Base):
     photoURL = Column(String)
     bio = Column(String)
     rank = Column(Integer)
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -30,11 +32,13 @@ class Users(Base):
             'rank': self.rank,
         }
 
+
 class Categories(Base):
     __tablename__ = 'categories'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -55,6 +59,7 @@ class Posts(Base):
     author_id = Column(Integer, ForeignKey('users.id'))
     user = relationship(Users)
     time = Column(DateTime, default=func.now())
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -66,7 +71,7 @@ class Posts(Base):
             'author_id': self.author_id,
             'time': self.time,
         }
-		
+
 
 class Comments(Base):
     __tablename__ = 'comments'
@@ -77,6 +82,7 @@ class Comments(Base):
     post_id = Column(Integer, ForeignKey('posts.id'))
     post = relationship(Posts)
     time = Column(DateTime, default=func.now())
+
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""

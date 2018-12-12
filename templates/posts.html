@@ -30,8 +30,8 @@
 {% if user.id|string() == post.author_id|string() %}
 {% if post.category_id|string() == category_id|string() %}
 <li><div>
-<a href = "{{url_for('showPost', category_id = category.id, post_id = post.id)}}"> <h3>{{post.title}} - by {{user.name}}</h3></a>
-<span style="text-align:right;">{{post.time.strftime('%d-%m-%Y %H:%M')}}</span>
+<a href = "{{url_for('showPost', category_id = category.id, post_id = post.id)}}"> <h3>{{post.title}} </a></h3>
+<span style="text-align:right;"> Author: <a href="{{url_for('showUserProfile', user_id = post.author_id)}}">  {{user.name}}</a> - {{post.time.strftime('%d-%m-%Y %H:%M')}}</span>
 {% if session['user_id'] is defined %}
 <a href = "{{url_for('editPost',category_id = category.id, post_id = post.id)}}">Edit Post</a>
 

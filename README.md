@@ -9,6 +9,7 @@ This project explores basic concepts regarding Python, Relational Databases, Que
 - Logging in using Google or Facebook (OAuth 2.0 authentication mechanism)
 - Querying/Searching specific posts/categories
 - Viewing user profiles
+- Editing user BIOs/status
 - JSON API Endpoints (Showing JSON serialized forms of pages)
 
 ## Setup

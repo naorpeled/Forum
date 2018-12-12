@@ -12,7 +12,19 @@ This project explores basic concepts regarding Python, Relational Databases, Que
 - Editing user BIOs/status
 - JSON API Endpoints (Showing JSON serialized forms of pages)
 
-## Setup
+# Permissions:
+## Member(user_rank = 0):
+- Add/Edit/Delete posts
+- Add/Edit/Delete their own comments
+- Update bio/status
+- Search for posts/categories
+
+## Admin(user_rank = 1):
+- *All user features +*:
+- Add/Edit/Delete Categories
+- Delete other users' comments
+
+# Setup
 ### How to get/install Python version 2 or 3
 Download link: https://www.python.org/downloads/
 

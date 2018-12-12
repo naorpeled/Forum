@@ -25,12 +25,17 @@ Base.metadata.bind = engine
 
 DBSession = sessionmaker(bind=engine)
 
-
+####
+#User rank meaning:
+# 1 - Admin
+# 0 - Member
+####
 @app.route('/')
 @app.route('/categories', methods=['GET', 'POST'])
 def showCategories():
     session = DBSession()
     categories = session.query(Categories).all()
+    #Search for a specific category
     if request.method == 'POST':
         searchKeyword = '%'
         searchKeyword += request.form['keyword']
@@ -53,6 +58,7 @@ def showCategoriesJSON():
 
 @app.route('/categories/new', methods=['GET', 'POST'])
 def createCategory():
+    #Check if a user is an administrator
     if not login_session['user_id']:
         flash("Please login first")
         return redirect(url_for('login'))
@@ -84,6 +90,7 @@ def showCategoryPosts(category_id):
     category = session.query(Categories).filter_by(id=category_id).one()
     users = session.query(Users).all()
     posts = session.query(Posts).filter_by(category_id=category_id)
+    #Search for a specific post
     if request.method == 'POST':
         searchKeyword = '%'
         searchKeyword += request.form['keyword']
@@ -118,6 +125,7 @@ def editCategory(category_id):
     session = DBSession()
     oldCategory = session.query(Categories).filter_by(
                                            id=category_id).first()
+    #Check if a user is an administrator
     if not login_session:
         flash("Please login first")
         return redirect(url_for('login'))
@@ -149,6 +157,7 @@ def deleteCategory(category_id):
     session = DBSession()
     category = session.query(Categories).filter_by(
                                            id=category_id).first()
+    #Check if a user is an administrator
     if not login_session:
         flash("Please login first")
         return redirect(url_for('login'))
@@ -173,6 +182,8 @@ def deleteCategory(category_id):
 @app.route('/categories/<int:category_id>/<int:post_id>',
            methods=['GET', 'POST'])
 def showPost(category_id, post_id):
+    #If the request is a POST it means that a user
+    #is trying to add a comment
     if request.method == 'POST':
         if login_session['user_id']:
             session = DBSession()
@@ -213,6 +224,7 @@ def showPostJSON(category_id, post_id):
 @app.route('/categories/<int:category_id>/add', methods=['GET', 'POST'])
 def addPost(category_id):
     session = DBSession()
+    #Check if a user is logged in
     if request.method == 'POST':
         if login_session:
             newPost = Posts(title=request.form['title'],
@@ -245,6 +257,8 @@ def editPost(category_id, post_id):
     oldPost = session.query(Posts).filter_by(
                                 id=post_id,
                                 category_id=category_id).first()
+    #If the user isn't the author of the post
+    #then we need to block him from editing it
     if oldPost.author_id != login_session['user_id']:
         flash("You cannot edit posts that aren't yours")
         return redirect(url_for('showCategoryPosts', category_id=category_id))
@@ -278,6 +292,8 @@ def editComment(category_id, post_id, comment_id):
     users = session.query(Users).all()
     oldComment = session.query(Comments).filter_by(
                                      id=comment_id).first()
+    #If the user isn't the author of the comment
+    #then we need to block him from editing it
     if oldComment.author_id != login_session['user_id']:
         flash("You cannot edit comments that aren't yours")
         return redirect(url_for('showPost',
@@ -310,6 +326,8 @@ def deletePost(category_id, post_id):
                                            id=category_id).first()
     post = session.query(Posts).filter_by(
                                   id=post_id).first()
+    #If the user isn't the author of the post
+    #then we need to block him from deleting it
     if post.author_id != login_session['user_id']:
         flash("You cannot delete posts that aren't yours")
         return redirect(url_for('showCategoryPosts', category_id=category_id))
@@ -339,6 +357,8 @@ def deleteComment(category_id, post_id, comment_id):
     session = DBSession()
     comment = session.query(Comments).filter_by(
                                            id=comment_id).first()
+    #If the user isn't the author of the comment
+    #then we need to block him from editing it
     if comment.author_id != login_session['user_id']:
         if str(login_session['user_rank']) != str(1):
             flash("You cannot delete comments that aren't yours")
@@ -360,7 +380,6 @@ def deleteComment(category_id, post_id, comment_id):
                                category_id=category_id,
                                post_id=post_id,
                                comment_id=comment_id)
-
 
 @app.route('/login', methods=['GET'])
 def login():
@@ -609,11 +628,14 @@ def disconnect():
 def showUserProfile(user_id):
     session = DBSession()
     user = session.query(Users).filter_by(id=user_id).one_or_none()
+    #Check if the user exists
     if user is None:
         session.close()
         flash("User not found")
         return redirect(url_for('showCategories'))
     user_posts = session.query(Posts).filter_by(author_id=user_id).all()
+    #If the request is a POST it means that a user
+    #is trying to edit his own bio
     if request.method == "POST":
         newUser = session.query(Users).filter_by(id=user_id).first()
         newBio = request.form['bio']

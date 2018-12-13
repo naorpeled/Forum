@@ -21,6 +21,8 @@ class Users(Base):
     photoURL = Column(String)
     bio = Column(String)
     rank = Column(Integer)
+    comments = relationship("Comments", cascade="all, delete-orphan")
+    posts = relationship("Posts", cascade="all, delete-orphan")
 
     @property
     def serialize(self):
@@ -44,6 +46,7 @@ class Categories(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(250), nullable=False)
+    posts = relationship("Posts", cascade="all, delete-orphan")
 
     @property
     def serialize(self):
@@ -67,11 +70,11 @@ class Posts(Base):
     title = Column(String(250), nullable=False)
     content = Column(String(250), nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'))
-    category = relationship(Categories, cascade="all, delete-orphan")
+    category = relationship(Categories)
     author_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship(Users, cascade="all, delete-orphan")
+    user = relationship(Users)
     time = Column(DateTime, default=func.now())
-
+    comments = relationship("Comments", cascade="all, delete-orphan")
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -96,9 +99,9 @@ class Comments(Base):
     id = Column(Integer, primary_key=True)
     content = Column(String(250), nullable=False)
     author_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship(Users, cascade="all, delete-orphan")
+    user = relationship(Users)
     post_id = Column(Integer, ForeignKey('posts.id'))
-    post = relationship(Posts, cascade="all, delete-orphan")
+    post = relationship(Posts)
     time = Column(DateTime, default=func.now())
 
     @property

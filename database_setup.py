@@ -9,6 +9,9 @@ Base = declarative_base()
 
 
 class Users(Base):
+    """
+    Registered user information is stored in db
+    """
     __tablename__ = 'users'
 
     name = Column(String(250), nullable=False)
@@ -34,6 +37,9 @@ class Users(Base):
 
 
 class Categories(Base):
+    """
+    Store categories info in db
+    """
     __tablename__ = 'categories'
 
     id = Column(Integer, primary_key=True)
@@ -49,15 +55,21 @@ class Categories(Base):
 
 
 class Posts(Base):
+    """
+    Store posts info in db.
+
+    Stores the post's title, content, category id
+    author, time of creation.
+    """
     __tablename__ = 'posts'
 
     id = Column(Integer, primary_key=True)
     title = Column(String(250), nullable=False)
     content = Column(String(250), nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'))
-    category = relationship(Categories)
+    category = relationship(Categories, cascade="all, delete-orphan")
     author_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship(Users)
+    user = relationship(Users, cascade="all, delete-orphan")
     time = Column(DateTime, default=func.now())
 
     @property
@@ -74,13 +86,19 @@ class Posts(Base):
 
 
 class Comments(Base):
+    """
+    Stores comment information in the db
+
+    Stores the comment content, author,
+    to which post is it connected to.
+    """
     __tablename__ = 'comments'
     id = Column(Integer, primary_key=True)
     content = Column(String(250), nullable=False)
     author_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship(Users)
+    user = relationship(Users, cascade="all, delete-orphan")
     post_id = Column(Integer, ForeignKey('posts.id'))
-    post = relationship(Posts)
+    post = relationship(Posts, cascade="all, delete-orphan")
     time = Column(DateTime, default=func.now())
 
     @property

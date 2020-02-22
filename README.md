@@ -1,7 +1,4 @@
-# About
-In this repository you will find my solution to the *Item Catalog* project from Udacity's Full Stack Nanodegree.
-This project explores basic concepts regarding Python, Relational Databases, Queries and the Flask Framework.
-
+This project explores basic concepts regarding Python, Relational Databases, Queries, Server Side Rendering and the Flask Framework.
 
 # Features
 - Adding/Deleting/Editing categories
@@ -13,6 +10,10 @@ This project explores basic concepts regarding Python, Relational Databases, Que
 - Editing user BIOs/status
 - JSON API Endpoints (Showing JSON serialized forms of pages)
 
+# TODO:
+- Change the architecture of the back-end to a RESTful API instead of SSR(Server Side Rendering).
+- Use AJAX requests instead of using links when editing/removing/adding messages.
+- Redesign the layout.
 
 # Permissions:
 ## Member(user_rank = 0):
